@@ -4,6 +4,12 @@ import base64
 import time
 from bs4 import BeautifulSoup as bs
 
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+from ProxyPool import Proxy, addProxy
+
 '''
 This is the script for scraping http://proxy-list.org site
 '''
@@ -31,10 +37,10 @@ while True:
           ip_port = base64.b64decode(Raw_ProxyInfo.find("li",{"class":"proxy"}).text.replace("Proxy('","").replace("')",""))
           IP = re.findall(Re_Pattern_IP, ip_port)[0]
           PORT = re.findall(Re_Pattern_PORT, ip_port)[0]
-          PROTOCOL = Raw_ProxyInfo.find("li",{"class":"https"}).text
+          PROTOCOL = Raw_ProxyInfo.find("li",{"class":"https"}).text.lower()
           print IP, PORT, PROTOCOL
-          # if PROTOCOL != "-":
-          #   Pool.addProxy(IP,PORT,PROTOCOL)
+          if PROTOCOL in ['http', 'https']:
+            addProxy(Proxy(IP, PROTOCOL, PORT))
         break
       except Exception as e:
         print "An error occurred: "+str(e)
