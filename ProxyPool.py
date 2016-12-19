@@ -3,7 +3,7 @@ from copy import deepcopy
 from os import system as cmd
 from time import sleep
 
-REQ_TIMEOUT = 2
+REQ_TIMEOUT = 5
 
 proxy_set = set()
 
@@ -26,38 +26,57 @@ class Proxy:
 #Add record if not exist
 def addProxy(proxy):
   global proxy_set
-  print "adding proxy"
-  print "Proxy size is {}".format(len(proxy_set))
-  proxy_set.add(proxy)
+  if testConnection(proxy):
+    proxy_set.add(proxy)
+    print "added {}".format(proxy)
+    return True
+  else:
+    print "not added. {} is not anomynous"
+    return False
 
 #*Delete Proxy Data with no connection
 def cleanNonWorking():
   global proxy_set
   proxy_set_cloned = deepcopy(proxy_set)
+  originIP = getOriginIP()
   for proxy in proxy_set_cloned:
     getProxyPoolStatus(proxy_set_cloned)
 
-    isAnonymous = testConnection(proxy)
+    isAnonymous = testConnection(proxy, originIP)
     if isAnonymous == False:
+      print "removing proxy {}".format(proxy)
       proxy_set.remove(proxy)
+    sleep(0.5)
 
 #Outputs Total number of Proxies within ProxyPoolDB, Rate of Proxy HealthChecks, Num of Threads active, Rate of new Proxies added, Rate of Health Proxies
 def getProxyPoolStatus(proxy_set):
   print "[!] Proxy Amount: "+str(len(proxy_set))
 
+def getOriginIP():
+  originIP = None
+  for attempt in xrange(3):
+    try:
+      originIP = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT).content.split(";")[0]
+    except Exception as e:
+      print "Attempt {}. Failed to retrieve origin ip {}".format(attempt+1, e)
+    break
+  return originIP
+
 #Testing given Proxy's connection and anonymity, returns True if it can be used and is anonymous, otherwise returns False
-def testConnection(proxy, originalIP = None):
+def testConnection(proxy, originIP = None):
   proxies = { proxy.protocol: proxy.ip+":"+proxy.port }
   try:
-    if originalIP == None:
-      originalIP = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT).content.split(";")[0]
+    if originIP == None:
+      originIP = getOriginIP()
+
+    if originIP == None:
+      raise Exception("Failed to get origin IP")
 
     maskedIPs = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT, proxies=proxies).content.replace(";", " ").split(" ")
-    if originalIP in maskedIPs:
+    if originIP in maskedIPs:
       return False
     else:
       return True
   except Exception as e:
     print e 
     return False 
-  sleep(0.5)
