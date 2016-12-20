@@ -2,8 +2,12 @@ import requests
 from copy import deepcopy
 from os import system as cmd
 from time import sleep
+import pickle
 
 REQ_TIMEOUT = 5
+
+BACKUP_FILE_PATH = '/tmp/'
+BACKUP_FILE_NAME = 'proxy.pickle'
 
 proxy_set = set()
 
@@ -28,13 +32,12 @@ def addProxy(proxy):
   global proxy_set
   if testConnection(proxy):
     proxy_set.add(proxy)
-    print "[ProxyPool] added {}".format(proxy)
+    print "[ProxyPool]################ added {} ##############################".format(proxy)
     return True
   else:
     print "[ProxyPool] not added. {} is not anomynous".format(proxy)
     return False
 
-#*Delete Proxy Data with no connection
 def cleanNonWorking():
   global proxy_set
   print "[ProxyPool][Start] cleanning proxy set"
@@ -51,7 +54,6 @@ def cleanNonWorking():
   getProxyPoolStatus(proxy_set)
   sleep(10)
 
-#Outputs Total number of Proxies within ProxyPoolDB, Rate of Proxy HealthChecks, Num of Threads active, Rate of new Proxies added, Rate of Health Proxies
 def getProxyPoolStatus(proxy_set):
   print "[ProxyPool] Proxy Amount: "+str(len(proxy_set))
 
@@ -60,12 +62,11 @@ def getOriginIP():
   for attempt in xrange(3):
     try:
       originIP = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT).content.split(";")[0]
+      break
     except Exception as e:
       print "Attempt {}. Failed to retrieve origin ip {}".format(attempt+1, e)
-    break
   return originIP
 
-#Testing given Proxy's connection and anonymity, returns True if it can be used and is anonymous, otherwise returns False
 def testConnection(proxy, originIP = None):
   proxies = { proxy.protocol: proxy.ip+":"+proxy.port }
   try:
@@ -73,13 +74,27 @@ def testConnection(proxy, originIP = None):
       originIP = getOriginIP()
 
     if originIP == None:
-      raise Exception("Failed to get origin IP")
+      raise Exception("Failed to get origin IP so cannot test connection")
 
     maskedIPs = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT, proxies=proxies).content.replace(";", " ").split(" ")
     if originIP in maskedIPs:
+      print "Original IP. {} \n Masked IPs {} \n Proxies {}".format(originIP, maskedIPs, proxies)
       return False
     else:
       return True
   except Exception as e:
     print e 
     return False 
+
+# Dump proxy_set to file
+def dump():
+  with open("{}{}".format(BACKUP_FILE_PATH, BACKUP_FILE_NAME), 'w') as f:
+    pickle.dump(proxy_set, f)
+
+# Restore proxy_set
+def restore():
+  global proxy_set
+  with open("{}{}".format(BACKUP_FILE_PATH, BACKUP_FILE_NAME)) as f:
+    proxy_set = pickle.load(f)
+
+

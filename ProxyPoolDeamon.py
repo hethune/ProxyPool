@@ -19,6 +19,16 @@ class proxyThread(threading.Thread):
     while True:
       ProxyPool.cleanNonWorking()
 
+class proxyDumpThread(threading.Thread):
+  def run(self):
+    import ProxyPool
+
+    print "starting proxy dump thread"
+    while True:
+      ProxyPool.dump()
+      print "[Deamon] Dumped proxies"
+      time.sleep(30)
+
 def makeSiteThreads():
   import pkgutil
   import sites
@@ -45,9 +55,14 @@ if __name__ == "__main__":
   proxy_t.deamon = True
   proxy_t.start()
 
+  proxy_d = proxyDumpThread()
+  proxy_d.deamon = True
+  proxy_d.start()
+
   for t in site_threads:
     t.join()
 
   proxy_t.wait()
+  proxy_d.wait()
 
 
