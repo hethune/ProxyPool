@@ -40,18 +40,18 @@ def addProxy(proxy):
 
 def cleanNonWorking():
   global proxy_set
-  print "[ProxyPool][Start] cleanning proxy set"
-  getProxyPoolStatus(proxy_set)
   proxy_set_cloned = deepcopy(proxy_set)
+  print "[ProxyPool][Start] cleanning proxy set. Orignal size {}".format(len(proxy_set_cloned))
   originIP = getOriginIP()
+  counter = 0
   for proxy in proxy_set_cloned:
     isAnonymous = testConnection(proxy, originIP)
     if isAnonymous == False:
-      print "removing proxy {}".format(proxy)
+      print "[ProxyPool] removing proxy {}".format(proxy)
       proxy_set.remove(proxy)
-    sleep(0.5)
-  print "[ProxyPool][Done] cleanning proxy set"
-  getProxyPoolStatus(proxy_set)
+      counter += 1
+
+  print "[ProxyPool][Done] cleanning Done. Removed {} entries".format(counter)
   sleep(10)
 
 def getProxyPoolStatus(proxy_set):
@@ -78,7 +78,7 @@ def testConnection(proxy, originIP = None):
 
     maskedIPs = requests.get("http://wenhang.net/ipcheck", timeout=REQ_TIMEOUT, proxies=proxies).content.replace(";", " ").split(" ")
     if originIP in maskedIPs:
-      print "Original IP. {} \n Masked IPs {} \n Proxies {}".format(originIP, maskedIPs, proxies)
+      # print "Original IP. {} \n Masked IPs {} \n Proxies {}".format(originIP, maskedIPs, proxies)
       return False
     else:
       return True

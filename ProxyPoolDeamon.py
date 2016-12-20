@@ -1,6 +1,7 @@
 import threading
 import time
 import sys
+import ProxyPool
 
 class siteThread(threading.Thread):
   def __init__(self, name, crawlerFunc):
@@ -13,16 +14,12 @@ class siteThread(threading.Thread):
 
 class proxyThread(threading.Thread):
   def run(self):
-    import ProxyPool
-
     print "starting proxy pools"
     while True:
       ProxyPool.cleanNonWorking()
 
 class proxyDumpThread(threading.Thread):
   def run(self):
-    import ProxyPool
-
     print "starting proxy dump thread"
     while True:
       ProxyPool.dump()
@@ -32,6 +29,9 @@ class proxyDumpThread(threading.Thread):
 def makeSiteThreads():
   import pkgutil
   import sites
+
+  # load proxy file
+  ProxyPool.restore()
 
   sites_modules = []
   for importer, modname, ispkg in pkgutil.iter_modules(sites.__path__):
